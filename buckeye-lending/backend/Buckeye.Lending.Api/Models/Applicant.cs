@@ -21,5 +21,5 @@ public class Applicant
     public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
 
     // Navigation — one applicant can file many loan applications
-    public List<LoanApplicationDto> LoanApplications { get; set; } = [];
+    public List<LoanApplication> LoanApplications { get; set; } = [];
 }

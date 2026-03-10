@@ -10,9 +10,11 @@ public class LendingContext : DbContext
 
     public DbSet<Applicant> Applicants { get; set; }
     public DbSet<LoanType> LoanTypes { get; set; }
-    public DbSet<LoanApplicationDto> LoanApplications { get; set; }
+    public DbSet<LoanApplication> LoanApplications { get; set; }
     public DbSet<LoanPayment> LoanPayments { get; set; }
     public DbSet<LoanNote> LoanNotes { get; set; }
+    public DbSet<ReviewQueue> ReviewQueues { get; set; }
+    public DbSet<ReviewItem> ReviewItems { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -37,15 +39,15 @@ public class LendingContext : DbContext
         );
 
         // Seed LoanApplications (using FK ids instead of raw strings)
-        modelBuilder.Entity<LoanApplicationDto>().HasData(
-            new LoanApplicationDto { Id = 1, ApplicantName = "Sarah Johnson", ApplicantId = 1, LoanTypeId = 1, LoanAmount = 250000m, AnnualIncome = 95000m, Status = "Approved", RiskRating = 2, SubmittedDate = new DateTime(2026, 1, 15, 0, 0, 0, DateTimeKind.Utc), Notes = "Strong credit history, stable employment 8 years" },
-            new LoanApplicationDto { Id = 2, ApplicantName = "Michael Chen", ApplicantId = 2, LoanTypeId = 2, LoanAmount = 32500m, AnnualIncome = 68000m, Status = "Pending", RiskRating = 3, SubmittedDate = new DateTime(2026, 2, 1, 0, 0, 0, DateTimeKind.Utc), Notes = "First-time auto loan, good income-to-debt ratio" },
-            new LoanApplicationDto { Id = 3, ApplicantName = "Emily Rodriguez", ApplicantId = 3, LoanTypeId = 1, LoanAmount = 320000m, AnnualIncome = 72000m, Status = "Denied", RiskRating = 5, SubmittedDate = new DateTime(2026, 1, 28, 0, 0, 0, DateTimeKind.Utc), Notes = "Income-to-loan ratio exceeds threshold" },
-            new LoanApplicationDto { Id = 4, ApplicantName = "David Kim", ApplicantId = 4, LoanTypeId = 3, LoanAmount = 15000m, AnnualIncome = 52000m, Status = "Approved", RiskRating = 2, SubmittedDate = new DateTime(2026, 2, 3, 0, 0, 0, DateTimeKind.Utc), Notes = "Consolidating credit card debt, excellent history" },
-            new LoanApplicationDto { Id = 5, ApplicantName = "Jessica Martinez", ApplicantId = 5, LoanTypeId = 4, LoanAmount = 500000m, AnnualIncome = 150000m, Status = "Under Review", RiskRating = 4, SubmittedDate = new DateTime(2026, 2, 5, 0, 0, 0, DateTimeKind.Utc), Notes = "New restaurant venture, limited business credit" },
-            new LoanApplicationDto { Id = 6, ApplicantName = "James Wilson", ApplicantId = 6, LoanTypeId = 2, LoanAmount = 28000m, AnnualIncome = 75000m, Status = "Approved", RiskRating = 1, SubmittedDate = new DateTime(2026, 1, 20, 0, 0, 0, DateTimeKind.Utc), Notes = "Repeat customer, excellent credit score 780+" },
-            new LoanApplicationDto { Id = 7, ApplicantName = "Amanda Foster", ApplicantId = 7, LoanTypeId = 1, LoanAmount = 175000m, AnnualIncome = 88000m, Status = "Pending", RiskRating = 3, SubmittedDate = new DateTime(2026, 2, 10, 0, 0, 0, DateTimeKind.Utc), Notes = "First-time homebuyer, pending employment verification" },
-            new LoanApplicationDto { Id = 8, ApplicantName = "Robert Taylor", ApplicantId = 8, LoanTypeId = 4, LoanAmount = 75000m, AnnualIncome = 120000m, Status = "Denied", RiskRating = 4, SubmittedDate = new DateTime(2026, 2, 8, 0, 0, 0, DateTimeKind.Utc), Notes = "Insufficient collateral for requested amount" }
+        modelBuilder.Entity<LoanApplication>().HasData(
+            new LoanApplication { Id = 1, ApplicantName = "Sarah Johnson", ApplicantId = 1, LoanTypeId = 1, LoanAmount = 250000m, AnnualIncome = 95000m, Status = "Approved", RiskRating = 2, SubmittedDate = new DateTime(2026, 1, 15, 0, 0, 0, DateTimeKind.Utc), Notes = "Strong credit history, stable employment 8 years" },
+            new LoanApplication { Id = 2, ApplicantName = "Michael Chen", ApplicantId = 2, LoanTypeId = 2, LoanAmount = 32500m, AnnualIncome = 68000m, Status = "Pending", RiskRating = 3, SubmittedDate = new DateTime(2026, 2, 1, 0, 0, 0, DateTimeKind.Utc), Notes = "First-time auto loan, good income-to-debt ratio" },
+            new LoanApplication { Id = 3, ApplicantName = "Emily Rodriguez", ApplicantId = 3, LoanTypeId = 1, LoanAmount = 320000m, AnnualIncome = 72000m, Status = "Denied", RiskRating = 5, SubmittedDate = new DateTime(2026, 1, 28, 0, 0, 0, DateTimeKind.Utc), Notes = "Income-to-loan ratio exceeds threshold" },
+            new LoanApplication { Id = 4, ApplicantName = "David Kim", ApplicantId = 4, LoanTypeId = 3, LoanAmount = 15000m, AnnualIncome = 52000m, Status = "Approved", RiskRating = 2, SubmittedDate = new DateTime(2026, 2, 3, 0, 0, 0, DateTimeKind.Utc), Notes = "Consolidating credit card debt, excellent history" },
+            new LoanApplication { Id = 5, ApplicantName = "Jessica Martinez", ApplicantId = 5, LoanTypeId = 4, LoanAmount = 500000m, AnnualIncome = 150000m, Status = "Under Review", RiskRating = 4, SubmittedDate = new DateTime(2026, 2, 5, 0, 0, 0, DateTimeKind.Utc), Notes = "New restaurant venture, limited business credit" },
+            new LoanApplication { Id = 6, ApplicantName = "James Wilson", ApplicantId = 6, LoanTypeId = 2, LoanAmount = 28000m, AnnualIncome = 75000m, Status = "Approved", RiskRating = 1, SubmittedDate = new DateTime(2026, 1, 20, 0, 0, 0, DateTimeKind.Utc), Notes = "Repeat customer, excellent credit score 780+" },
+            new LoanApplication { Id = 7, ApplicantName = "Amanda Foster", ApplicantId = 7, LoanTypeId = 1, LoanAmount = 175000m, AnnualIncome = 88000m, Status = "Pending", RiskRating = 3, SubmittedDate = new DateTime(2026, 2, 10, 0, 0, 0, DateTimeKind.Utc), Notes = "First-time homebuyer, pending employment verification" },
+            new LoanApplication { Id = 8, ApplicantName = "Robert Taylor", ApplicantId = 8, LoanTypeId = 4, LoanAmount = 75000m, AnnualIncome = 120000m, Status = "Denied", RiskRating = 4, SubmittedDate = new DateTime(2026, 2, 8, 0, 0, 0, DateTimeKind.Utc), Notes = "Insufficient collateral for requested amount" }
         );
 
         // Seed LoanPayments (for approved loans)

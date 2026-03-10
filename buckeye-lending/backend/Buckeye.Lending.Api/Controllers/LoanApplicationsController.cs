@@ -20,7 +20,7 @@ public class LoanApplicationsController : ControllerBase
 
     // GET: api/LoanApplications?loanTypeId=1&minAmount=100000
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<LoanApplicationDto>>> GetAll(
+    public async Task<ActionResult<IEnumerable<LoanApplication>>> GetAll(
         [FromQuery] int? loanTypeId,
         [FromQuery] decimal? minAmount,
         [FromQuery] decimal? maxAmount,
@@ -48,7 +48,7 @@ public class LoanApplicationsController : ControllerBase
 
     // GET: api/LoanApplications/2
     [HttpGet("{id}")]
-    public async Task<ActionResult<LoanApplicationDto>> GetById(int id)
+    public async Task<ActionResult<LoanApplication>> GetById(int id)
     {
         var app = await _context.LoanApplications
             .Include(l => l.Applicant)
@@ -62,9 +62,9 @@ public class LoanApplicationsController : ControllerBase
         return Ok(app);
     }
 
-    // POST: api/LoanApplicationDtos
+    // POST: api/LoanApplications
     [HttpPost]
-    public async Task<ActionResult<LoanApplicationDto>> Create(LoanApplicationDto application)
+    public async Task<ActionResult<LoanApplication>> Create(LoanApplication application)
     {
         // Validate
         if (string.IsNullOrWhiteSpace(application.ApplicantName))
@@ -87,9 +87,9 @@ public class LoanApplicationsController : ControllerBase
         );
     }
 
-    // PUT: api/LoanApplicationDtos/2
+    // PUT: api/LoanApplications/2
     [HttpPut("{id}")]
-    public async Task<ActionResult<LoanApplicationDto>> Update(int id, LoanApplicationDto updated)
+    public async Task<ActionResult<LoanApplication>> Update(int id, LoanApplication updated)
     {
         var existing = await _context.LoanApplications.FindAsync(id);
         if (existing == null)
@@ -115,7 +115,7 @@ public class LoanApplicationsController : ControllerBase
         return Ok(existing);
     }
 
-    // DELETE: api/LoanApplicationDtos/3
+    // DELETE: api/LoanApplications/3
     [HttpDelete("{id}")]
     public async Task<ActionResult> Delete(int id)
     {

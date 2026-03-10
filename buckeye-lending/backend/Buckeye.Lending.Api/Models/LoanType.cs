@@ -19,5 +19,5 @@ public class LoanType
     public int MaxTermMonths { get; set; }
 
     // Navigation — one loan type can appear on many applications
-    public List<LoanApplicationDto> LoanApplications { get; set; } = [];
+    public List<LoanApplication> LoanApplications { get; set; } = [];
 }

@@ -22,5 +22,5 @@ public class LoanPayment
     public int LoanApplicationId { get; set; }
 
     // Navigation property
-    public LoanApplicationDto? LoanApplication { get; set; }
+    public LoanApplication? LoanApplication { get; set; }
 }

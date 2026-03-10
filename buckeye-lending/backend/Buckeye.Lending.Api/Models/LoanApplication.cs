@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Buckeye.Lending.Api.Models;
 
-public class LoanApplicationDto
+public class LoanApplication
 {
     public int Id { get; set; }
 
