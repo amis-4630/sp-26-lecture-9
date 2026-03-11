@@ -127,27 +127,54 @@ Migrations are a powerful feature of EF Core that allow us to evolve our databas
 
 ## Registering FluentValidation
 
-Before building the controller, we need to wire up FluentValidation in `Program.cs`. Add these using statements and service registrations:
+Before building the controller, we need to wire up FluentValidation in `Program.cs`. Add the using statement and register validators:
 
 ```csharp
 using FluentValidation;
-using FluentValidation.AspNetCore;
 ```
 
-Then after `AddControllers()`, register the auto-validation and all validators:
+Then after `AddControllers()`, register all validators from the assembly:
 
 ```csharp
 // FluentValidation — register all validators from this assembly
-builder.Services.AddFluentValidationAutoValidation();
 builder.Services.AddValidatorsFromAssemblyContaining<Program>();
 ```
 
-**Concept:** Two lines do all the work.
+**Concept:** One line does the work. `AddValidatorsFromAssemblyContaining<Program>()` scans the assembly for every class that extends `AbstractValidator<T>` and registers them in DI as `IValidator<T>`. No need to register each validator individually — add a new validator class and it's automatically picked up.
 
-1. `AddFluentValidationAutoValidation()` hooks FluentValidation into the ASP.NET model validation pipeline. When a request hits a controller action, ASP.NET automatically runs the matching validator before your action code executes — just like DataAnnotations did, but now using your FluentValidation rules.
-2. `AddValidatorsFromAssemblyContaining<Program>()` scans the assembly for every class that extends `AbstractValidator<T>` and registers them in DI. No need to register each validator individually — add a new validator class and it's automatically picked up.
+> **Note:** The old `FluentValidation.AspNetCore` package and its `AddFluentValidationAutoValidation()` method are **deprecated and no longer supported**. Instead of hooking into ASP.NET's synchronous model validation pipeline, we inject `IValidator<T>` into controllers and call `ValidateAsync` explicitly. This is the approach recommended by the FluentValidation author ([see #1959](https://github.com/FluentValidation/FluentValidation/issues/1959)) and has two key advantages:
+>
+> 1. **Async support** — validators with `MustAsync` rules (like our `AddToQueueRequestValidator` that checks the database) actually run asynchronously.
+> 2. **Explicit control** — you see exactly where and when validation happens in your controller code. No hidden "magic."
 
-This means your controllers don't change at all. `ModelState.IsValid` still works. The `[ApiController]` attribute still returns automatic 400 responses for invalid models. The only difference is where the rules are defined.
+### Manual Validation Pattern
+
+In each controller, inject the validator and call it before processing:
+
+```csharp
+private readonly IValidator<MyModel> _validator;
+
+public MyController(LendingContext context, IValidator<MyModel> validator)
+{
+    _context = context;
+    _validator = validator;
+}
+
+[HttpPost]
+public async Task<ActionResult<MyModel>> Create(MyModel model)
+{
+    var result = await _validator.ValidateAsync(model);
+    if (!result.IsValid)
+    {
+        result.AddToModelState(ModelState);
+        return ValidationProblem(ModelState);
+    }
+
+    // ... proceed with business logic
+}
+```
+
+The `AddToModelState` extension method copies FluentValidation errors into ASP.NET's `ModelState`, and `ValidationProblem()` returns a standard RFC 7807 problem details response with structured error information — consistent with how the rest of our API handles errors.
 
 ---
 
