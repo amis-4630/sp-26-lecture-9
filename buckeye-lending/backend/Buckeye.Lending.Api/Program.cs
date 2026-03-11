@@ -1,5 +1,4 @@
 using FluentValidation;
-using FluentValidation.AspNetCore;
 using Microsoft.EntityFrameworkCore;
 using Buckeye.Lending.Api.Data;
 using Buckeye.Lending.Api.Middleware;
@@ -27,8 +26,10 @@ builder.Services.AddControllers()
     });
 
 // FluentValidation — register all validators from this assembly
-builder.Services.AddFluentValidationAutoValidation();
 builder.Services.AddValidatorsFromAssemblyContaining<Program>();
+
+// AutoMapper - register all mappers from this assembly
+builder.Services.AddAutoMapper(typeof(Program));
 
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
