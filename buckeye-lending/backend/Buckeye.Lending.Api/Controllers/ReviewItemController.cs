@@ -1,8 +1,10 @@
+using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Buckeye.Lending.Api.Data;
 using Buckeye.Lending.Api.Models;
 using Buckeye.Lending.Api.Dtos;
+using Buckeye.Lending.Api.Validators;
 
 namespace Buckeye.Lending.Api.Controllers;
 
@@ -11,11 +13,13 @@ namespace Buckeye.Lending.Api.Controllers;
 public class ReviewQueueController : ControllerBase
 {
     private readonly LendingContext _context;
+    private readonly IValidator<AddToQueueRequest> _addToQueueValidator;
     private const string CurrentOfficerId = "default-officer";
 
-    public ReviewQueueController(LendingContext context)
+    public ReviewQueueController(LendingContext context, IValidator<AddToQueueRequest> addToQueueValidator)
     {
         _context = context;
+        _addToQueueValidator = addToQueueValidator;
     }
 
     [HttpGet]
@@ -28,6 +32,13 @@ public class ReviewQueueController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<ReviewItem>> AddToQueue(AddToQueueRequest request)
     {
+        var result = await _addToQueueValidator.ValidateAsync(request);
+        if (!result.IsValid)
+        {
+            result.AddToModelState(ModelState);
+            return ValidationProblem(ModelState);
+        }
+
         // TODO: implement
         throw new NotImplementedException();
     }

@@ -1,7 +1,8 @@
+using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
 using Buckeye.Lending.Api.Models;
-using System.Runtime.CompilerServices;
 using Buckeye.Lending.Api.Data;
+using Buckeye.Lending.Api.Validators;
 using Microsoft.EntityFrameworkCore;
 
 namespace Buckeye.Lending.Api.Controllers;
@@ -12,10 +13,12 @@ public class LoanApplicationsController : ControllerBase
 {
     // In-memory data — in real app, this is a database
     private readonly LendingContext _context;
+    private readonly IValidator<LoanApplication> _validator;
 
-    public LoanApplicationsController(LendingContext context)
+    public LoanApplicationsController(LendingContext context, IValidator<LoanApplication> validator)
     {
         _context = context;
+        _validator = validator;
     }
 
     // GET: api/LoanApplications?loanTypeId=1&minAmount=100000
@@ -66,12 +69,12 @@ public class LoanApplicationsController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<LoanApplication>> Create(LoanApplication application)
     {
-        // Validate
-        if (string.IsNullOrWhiteSpace(application.ApplicantName))
-            throw new ArgumentException("Applicant name is required", nameof(application.ApplicantName));
-
-        if (application.LoanAmount <= 0)
-            throw new ArgumentException("Loan amount must be positive", nameof(application.LoanAmount));
+        var result = await _validator.ValidateAsync(application);
+        if (!result.IsValid)
+        {
+            result.AddToModelState(ModelState);
+            return ValidationProblem(ModelState);
+        }
 
         // Set server-controlled fields
         application.Status = "Pending Review";
@@ -95,12 +98,12 @@ public class LoanApplicationsController : ControllerBase
         if (existing == null)
             throw new KeyNotFoundException($"Loan application with ID {id} not found");
 
-        // Validate
-        if (string.IsNullOrWhiteSpace(updated.ApplicantName))
-            throw new ArgumentException("Applicant name is required", nameof(updated.ApplicantName));
-
-        if (updated.LoanAmount <= 0)
-            throw new ArgumentException("Loan amount must be positive", nameof(updated.LoanAmount));
+        var result = await _validator.ValidateAsync(updated);
+        if (!result.IsValid)
+        {
+            result.AddToModelState(ModelState);
+            return ValidationProblem(ModelState);
+        }
 
         // Update allowed fields
         existing.ApplicantName = updated.ApplicantName;

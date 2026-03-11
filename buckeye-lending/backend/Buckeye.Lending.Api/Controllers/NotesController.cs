@@ -1,7 +1,9 @@
+using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Buckeye.Lending.Api.Data;
 using Buckeye.Lending.Api.Models;
+using Buckeye.Lending.Api.Validators;
 
 namespace Buckeye.Lending.Api.Controllers;
 
@@ -10,10 +12,12 @@ namespace Buckeye.Lending.Api.Controllers;
 public class NotesController : ControllerBase
 {
     private readonly LendingContext _context;
+    private readonly IValidator<LoanNote> _validator;
 
-    public NotesController(LendingContext context)
+    public NotesController(LendingContext context, IValidator<LoanNote> validator)
     {
         _context = context;
+        _validator = validator;
     }
 
     /// <summary>Get all notes for a loan application.</summary>
@@ -35,6 +39,13 @@ public class NotesController : ControllerBase
         var app = await _context.LoanApplications.FindAsync(loanApplicationId);
         if (app == null)
             throw new KeyNotFoundException($"Loan application with ID {loanApplicationId} not found");
+
+        var result = await _validator.ValidateAsync(note);
+        if (!result.IsValid)
+        {
+            result.AddToModelState(ModelState);
+            return ValidationProblem(ModelState);
+        }
 
         note.LoanApplicationId = loanApplicationId;
         note.CreatedDate = DateTime.UtcNow;
