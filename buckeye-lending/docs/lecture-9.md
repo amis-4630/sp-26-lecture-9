@@ -7,15 +7,12 @@
 Create `Models/ReviewQueue.cs`:
 
 ```csharp
-using System.ComponentModel.DataAnnotations;
-
 namespace Buckeye.Lending.Api.Models;
 
 public class ReviewQueue
 {
     public int Id { get; set; }
 
-    [Required]
     public string OfficerId { get; set; } = string.Empty;
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
@@ -27,15 +24,33 @@ public class ReviewQueue
 }
 ```
 
+Then create `Validators/ReviewQueueValidator.cs`:
+
+```csharp
+using FluentValidation;
+using Buckeye.Lending.Api.Models;
+
+namespace Buckeye.Lending.Api.Validators;
+
+public class ReviewQueueValidator : AbstractValidator<ReviewQueue>
+{
+    public ReviewQueueValidator()
+    {
+        RuleFor(x => x.OfficerId)
+            .NotEmpty();
+    }
+}
+```
+
 **Concept:** Simple. An Id, an OfficerId — required, because every queue must belong to someone — timestamps, and a navigation property for the items collection. The `= new List<>()` default prevents null reference exceptions when you access Items on a new queue.
+
+Notice the model is clean — no validation attributes. Instead, validation rules live in a dedicated `AbstractValidator<T>` class. This is the FluentValidation pattern: separate concerns. The model describes the shape of the data; the validator describes the rules.
 
 ### Step 2: ReviewItem Model
 
 Create `Models/ReviewItem.cs`:
 
 ```csharp
-using System.ComponentModel.DataAnnotations;
-
 namespace Buckeye.Lending.Api.Models;
 
 public class ReviewItem
@@ -50,16 +65,35 @@ public class ReviewItem
     public int LoanApplicationId { get; set; }
     public LoanApplication LoanApplication { get; set; } = null!;
 
-    [Range(1, 5)]
     public int Priority { get; set; } = 3;
 
     public string? Notes { get; set; }
 }
 ```
 
+Then create `Validators/ReviewItemValidator.cs`:
+
+```csharp
+using FluentValidation;
+using Buckeye.Lending.Api.Models;
+
+namespace Buckeye.Lending.Api.Validators;
+
+public class ReviewItemValidator : AbstractValidator<ReviewItem>
+{
+    public ReviewItemValidator()
+    {
+        RuleFor(x => x.Priority)
+            .InclusiveBetween(1, 5);
+    }
+}
+```
+
 **Concept:** ReviewItem has two foreign keys: QueueId links it to the queue, LoanApplicationId links it to the loan application being reviewed. Both have navigation properties so we can use `.Include()` in queries. Priority defaults to 3 — middle of the range. Notes are nullable because they're optional.
 
 The `= null!` on the navigation properties tells the compiler 'I know this looks null, but EF Core will populate it when I use Include.' This is standard EF Core convention.
+
+The `InclusiveBetween(1, 5)` rule in the validator replaces the old `[Range(1, 5)]` attribute — same constraint, but expressed as a fluent rule.
 
 ### Step 3: Update DbContext
 
@@ -91,6 +125,32 @@ Migrations are a powerful feature of EF Core that allow us to evolve our databas
 
 ---
 
+## Registering FluentValidation
+
+Before building the controller, we need to wire up FluentValidation in `Program.cs`. Add these using statements and service registrations:
+
+```csharp
+using FluentValidation;
+using FluentValidation.AspNetCore;
+```
+
+Then after `AddControllers()`, register the auto-validation and all validators:
+
+```csharp
+// FluentValidation — register all validators from this assembly
+builder.Services.AddFluentValidationAutoValidation();
+builder.Services.AddValidatorsFromAssemblyContaining<Program>();
+```
+
+**Concept:** Two lines do all the work.
+
+1. `AddFluentValidationAutoValidation()` hooks FluentValidation into the ASP.NET model validation pipeline. When a request hits a controller action, ASP.NET automatically runs the matching validator before your action code executes — just like DataAnnotations did, but now using your FluentValidation rules.
+2. `AddValidatorsFromAssemblyContaining<Program>()` scans the assembly for every class that extends `AbstractValidator<T>` and registers them in DI. No need to register each validator individually — add a new validator class and it's automatically picked up.
+
+This means your controllers don't change at all. `ModelState.IsValid` still works. The `[ApiController]` attribute still returns automatic 400 responses for invalid models. The only difference is where the rules are defined.
+
+---
+
 ## Controller Skeleton
 
 Create `Dtos/ReviewQueueRequests.cs`:
@@ -110,6 +170,26 @@ public class UpdateItemRequest
     public string? Notes { get; set; }
 }
 ```
+
+Then create `Validators/AddToQueueRequestValidator.cs`:
+
+```csharp
+using FluentValidation;
+using Buckeye.Lending.Api.Dtos;
+
+namespace Buckeye.Lending.Api.Validators;
+
+public class AddToQueueRequestValidator : AbstractValidator<AddToQueueRequest>
+{
+    public AddToQueueRequestValidator()
+    {
+        RuleFor(x => x.Priority)
+            .InclusiveBetween(1, 5);
+    }
+}
+```
+
+DTOs stay clean too — validation rules live in their own validator class.
 
 Create `Controllers/ReviewQueueController.cs`:
 

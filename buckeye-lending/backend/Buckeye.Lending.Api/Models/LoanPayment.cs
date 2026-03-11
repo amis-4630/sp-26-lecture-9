@@ -1,4 +1,3 @@
-using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Buckeye.Lending.Api.Models;
@@ -10,12 +9,11 @@ public class LoanPayment
 {
     public int Id { get; set; }
 
-    [Required, Column(TypeName = "decimal(12,2)")]
+    [Column(TypeName = "decimal(12,2)")]
     public decimal Amount { get; set; }
 
     public DateTime PaymentDate { get; set; } = DateTime.UtcNow;
 
-    [Required, MaxLength(30)]
     public string Method { get; set; } = string.Empty; // e.g. "ACH", "Check", "Wire"
 
     // Foreign key — each payment belongs to one loan application

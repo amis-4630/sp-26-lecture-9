@@ -1,5 +1,3 @@
-using System.ComponentModel.DataAnnotations;
-
 namespace Buckeye.Lending.Api.Models;
 
 public class ReviewItem
@@ -14,7 +12,6 @@ public class ReviewItem
     public int LoanApplicationId { get; set; }
     public LoanApplication LoanApplication { get; set; } = null!;
 
-    [Range(1, 5)]
     public int Priority { get; set; } = 3;
 
     public string? Notes { get; set; }
