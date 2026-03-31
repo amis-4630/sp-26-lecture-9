@@ -1,7 +1,9 @@
+using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Buckeye.Lending.Api.Data;
 using Buckeye.Lending.Api.Models;
+using Buckeye.Lending.Api.Validators;
 
 namespace Buckeye.Lending.Api.Controllers;
 
@@ -10,10 +12,12 @@ namespace Buckeye.Lending.Api.Controllers;
 public class ApplicantsController : ControllerBase
 {
     private readonly LendingContext _context;
+    private readonly IValidator<Applicant> _validator;
 
-    public ApplicantsController(LendingContext context)
+    public ApplicantsController(LendingContext context, IValidator<Applicant> validator)
     {
         _context = context;
+        _validator = validator;
     }
 
     /// <summary>Get all applicants.</summary>
@@ -41,8 +45,12 @@ public class ApplicantsController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<Applicant>> Create(Applicant applicant)
     {
-        if (string.IsNullOrWhiteSpace(applicant.Name))
-            throw new ArgumentException("Applicant name is required", nameof(applicant.Name));
+        var result = await _validator.ValidateAsync(applicant);
+        if (!result.IsValid)
+        {
+            result.AddToModelState(ModelState);
+            return ValidationProblem(ModelState);
+        }
 
         applicant.CreatedDate = DateTime.UtcNow;
 

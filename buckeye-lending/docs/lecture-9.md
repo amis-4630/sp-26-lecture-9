@@ -7,15 +7,12 @@
 Create `Models/ReviewQueue.cs`:
 
 ```csharp
-using System.ComponentModel.DataAnnotations;
-
 namespace Buckeye.Lending.Api.Models;
 
 public class ReviewQueue
 {
     public int Id { get; set; }
 
-    [Required]
     public string OfficerId { get; set; } = string.Empty;
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
@@ -27,15 +24,33 @@ public class ReviewQueue
 }
 ```
 
+Then create `Validators/ReviewQueueValidator.cs`:
+
+```csharp
+using FluentValidation;
+using Buckeye.Lending.Api.Models;
+
+namespace Buckeye.Lending.Api.Validators;
+
+public class ReviewQueueValidator : AbstractValidator<ReviewQueue>
+{
+    public ReviewQueueValidator()
+    {
+        RuleFor(x => x.OfficerId)
+            .NotEmpty();
+    }
+}
+```
+
 **Concept:** Simple. An Id, an OfficerId — required, because every queue must belong to someone — timestamps, and a navigation property for the items collection. The `= new List<>()` default prevents null reference exceptions when you access Items on a new queue.
+
+Notice the model is clean — no validation attributes. Instead, validation rules live in a dedicated `AbstractValidator<T>` class. This is the FluentValidation pattern: separate concerns. The model describes the shape of the data; the validator describes the rules.
 
 ### Step 2: ReviewItem Model
 
 Create `Models/ReviewItem.cs`:
 
 ```csharp
-using System.ComponentModel.DataAnnotations;
-
 namespace Buckeye.Lending.Api.Models;
 
 public class ReviewItem
@@ -50,16 +65,35 @@ public class ReviewItem
     public int LoanApplicationId { get; set; }
     public LoanApplication LoanApplication { get; set; } = null!;
 
-    [Range(1, 5)]
     public int Priority { get; set; } = 3;
 
     public string? Notes { get; set; }
 }
 ```
 
+Then create `Validators/ReviewItemValidator.cs`:
+
+```csharp
+using FluentValidation;
+using Buckeye.Lending.Api.Models;
+
+namespace Buckeye.Lending.Api.Validators;
+
+public class ReviewItemValidator : AbstractValidator<ReviewItem>
+{
+    public ReviewItemValidator()
+    {
+        RuleFor(x => x.Priority)
+            .InclusiveBetween(1, 5);
+    }
+}
+```
+
 **Concept:** ReviewItem has two foreign keys: QueueId links it to the queue, LoanApplicationId links it to the loan application being reviewed. Both have navigation properties so we can use `.Include()` in queries. Priority defaults to 3 — middle of the range. Notes are nullable because they're optional.
 
 The `= null!` on the navigation properties tells the compiler 'I know this looks null, but EF Core will populate it when I use Include.' This is standard EF Core convention.
+
+The `InclusiveBetween(1, 5)` rule in the validator replaces the old `[Range(1, 5)]` attribute — same constraint, but expressed as a fluent rule.
 
 ### Step 3: Update DbContext
 
@@ -91,6 +125,59 @@ Migrations are a powerful feature of EF Core that allow us to evolve our databas
 
 ---
 
+## Registering FluentValidation
+
+Before building the controller, we need to wire up FluentValidation in `Program.cs`. Add the using statement and register validators:
+
+```csharp
+using FluentValidation;
+```
+
+Then after `AddControllers()`, register all validators from the assembly:
+
+```csharp
+// FluentValidation — register all validators from this assembly
+builder.Services.AddValidatorsFromAssemblyContaining<Program>();
+```
+
+**Concept:** One line does the work. `AddValidatorsFromAssemblyContaining<Program>()` scans the assembly for every class that extends `AbstractValidator<T>` and registers them in DI as `IValidator<T>`. No need to register each validator individually — add a new validator class and it's automatically picked up.
+
+> **Note:** The old `FluentValidation.AspNetCore` package and its `AddFluentValidationAutoValidation()` method are **deprecated and no longer supported**. Instead of hooking into ASP.NET's synchronous model validation pipeline, we inject `IValidator<T>` into controllers and call `ValidateAsync` explicitly. This is the approach recommended by the FluentValidation author ([see #1959](https://github.com/FluentValidation/FluentValidation/issues/1959)) and has two key advantages:
+>
+> 1. **Async support** — validators with `MustAsync` rules (like our `AddToQueueRequestValidator` that checks the database) actually run asynchronously.
+> 2. **Explicit control** — you see exactly where and when validation happens in your controller code. No hidden "magic."
+
+### Manual Validation Pattern
+
+In each controller, inject the validator and call it before processing:
+
+```csharp
+private readonly IValidator<MyModel> _validator;
+
+public MyController(LendingContext context, IValidator<MyModel> validator)
+{
+    _context = context;
+    _validator = validator;
+}
+
+[HttpPost]
+public async Task<ActionResult<MyModel>> Create(MyModel model)
+{
+    var result = await _validator.ValidateAsync(model);
+    if (!result.IsValid)
+    {
+        result.AddToModelState(ModelState);
+        return ValidationProblem(ModelState);
+    }
+
+    // ... proceed with business logic
+}
+```
+
+The `AddToModelState` extension method copies FluentValidation errors into ASP.NET's `ModelState`, and `ValidationProblem()` returns a standard RFC 7807 problem details response with structured error information — consistent with how the rest of our API handles errors.
+
+---
+
 ## Controller Skeleton
 
 Create `Dtos/ReviewQueueRequests.cs`:
@@ -110,6 +197,26 @@ public class UpdateItemRequest
     public string? Notes { get; set; }
 }
 ```
+
+Then create `Validators/AddToQueueRequestValidator.cs`:
+
+```csharp
+using FluentValidation;
+using Buckeye.Lending.Api.Dtos;
+
+namespace Buckeye.Lending.Api.Validators;
+
+public class AddToQueueRequestValidator : AbstractValidator<AddToQueueRequest>
+{
+    public AddToQueueRequestValidator()
+    {
+        RuleFor(x => x.Priority)
+            .InclusiveBetween(1, 5);
+    }
+}
+```
+
+DTOs stay clean too — validation rules live in their own validator class.
 
 Create `Controllers/ReviewQueueController.cs`:
 

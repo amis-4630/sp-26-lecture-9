@@ -1,3 +1,4 @@
+using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 using Buckeye.Lending.Api.Data;
 using Buckeye.Lending.Api.Middleware;
@@ -23,6 +24,12 @@ builder.Services.AddControllers()
         // Prevent circular reference errors from navigation properties
         options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
     });
+
+// FluentValidation — register all validators from this assembly
+builder.Services.AddValidatorsFromAssemblyContaining<Program>();
+
+// AutoMapper - register all mappers from this assembly
+builder.Services.AddAutoMapper(typeof(Program));
 
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();

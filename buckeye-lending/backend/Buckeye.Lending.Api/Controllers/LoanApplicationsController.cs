@@ -1,7 +1,8 @@
+using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
 using Buckeye.Lending.Api.Models;
-using System.Runtime.CompilerServices;
 using Buckeye.Lending.Api.Data;
+using Buckeye.Lending.Api.Validators;
 using Microsoft.EntityFrameworkCore;
 
 namespace Buckeye.Lending.Api.Controllers;
@@ -12,15 +13,17 @@ public class LoanApplicationsController : ControllerBase
 {
     // In-memory data — in real app, this is a database
     private readonly LendingContext _context;
+    private readonly IValidator<LoanApplication> _validator;
 
-    public LoanApplicationsController(LendingContext context)
+    public LoanApplicationsController(LendingContext context, IValidator<LoanApplication> validator)
     {
         _context = context;
+        _validator = validator;
     }
 
     // GET: api/LoanApplications?loanTypeId=1&minAmount=100000
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<LoanApplicationDto>>> GetAll(
+    public async Task<ActionResult<IEnumerable<LoanApplication>>> GetAll(
         [FromQuery] int? loanTypeId,
         [FromQuery] decimal? minAmount,
         [FromQuery] decimal? maxAmount,
@@ -48,7 +51,7 @@ public class LoanApplicationsController : ControllerBase
 
     // GET: api/LoanApplications/2
     [HttpGet("{id}")]
-    public async Task<ActionResult<LoanApplicationDto>> GetById(int id)
+    public async Task<ActionResult<LoanApplication>> GetById(int id)
     {
         var app = await _context.LoanApplications
             .Include(l => l.Applicant)
@@ -62,16 +65,16 @@ public class LoanApplicationsController : ControllerBase
         return Ok(app);
     }
 
-    // POST: api/LoanApplicationDtos
+    // POST: api/LoanApplications
     [HttpPost]
-    public async Task<ActionResult<LoanApplicationDto>> Create(LoanApplicationDto application)
+    public async Task<ActionResult<LoanApplication>> Create(LoanApplication application)
     {
-        // Validate
-        if (string.IsNullOrWhiteSpace(application.ApplicantName))
-            throw new ArgumentException("Applicant name is required", nameof(application.ApplicantName));
-
-        if (application.LoanAmount <= 0)
-            throw new ArgumentException("Loan amount must be positive", nameof(application.LoanAmount));
+        var result = await _validator.ValidateAsync(application);
+        if (!result.IsValid)
+        {
+            result.AddToModelState(ModelState);
+            return ValidationProblem(ModelState);
+        }
 
         // Set server-controlled fields
         application.Status = "Pending Review";
@@ -87,20 +90,20 @@ public class LoanApplicationsController : ControllerBase
         );
     }
 
-    // PUT: api/LoanApplicationDtos/2
+    // PUT: api/LoanApplications/2
     [HttpPut("{id}")]
-    public async Task<ActionResult<LoanApplicationDto>> Update(int id, LoanApplicationDto updated)
+    public async Task<ActionResult<LoanApplication>> Update(int id, LoanApplication updated)
     {
         var existing = await _context.LoanApplications.FindAsync(id);
         if (existing == null)
             throw new KeyNotFoundException($"Loan application with ID {id} not found");
 
-        // Validate
-        if (string.IsNullOrWhiteSpace(updated.ApplicantName))
-            throw new ArgumentException("Applicant name is required", nameof(updated.ApplicantName));
-
-        if (updated.LoanAmount <= 0)
-            throw new ArgumentException("Loan amount must be positive", nameof(updated.LoanAmount));
+        var result = await _validator.ValidateAsync(updated);
+        if (!result.IsValid)
+        {
+            result.AddToModelState(ModelState);
+            return ValidationProblem(ModelState);
+        }
 
         // Update allowed fields
         existing.ApplicantName = updated.ApplicantName;
@@ -115,7 +118,7 @@ public class LoanApplicationsController : ControllerBase
         return Ok(existing);
     }
 
-    // DELETE: api/LoanApplicationDtos/3
+    // DELETE: api/LoanApplications/3
     [HttpDelete("{id}")]
     public async Task<ActionResult> Delete(int id)
     {
