@@ -187,9 +187,9 @@ export default function LoanForm() {
             value={formData.applicantName}
             onChange={handleChange}
             onBlur={handleBlur}
-            aria-invalid={
-              touched.has("applicantName") && !!errors.applicantName
-            }
+            {...(touched.has("applicantName") && errors.applicantName
+              ? { "aria-invalid": "true" as const }
+              : {})}
           />
           {touched.has("applicantName") && errors.applicantName && (
             <span className="field-error" role="alert">
@@ -207,7 +207,9 @@ export default function LoanForm() {
             value={formData.email}
             onChange={handleChange}
             onBlur={handleBlur}
-            aria-invalid={touched.has("email") && !!errors.email}
+            {...(touched.has("email") && errors.email
+              ? { "aria-invalid": "true" as const }
+              : {})}
           />
           {touched.has("email") && errors.email && (
             <span className="field-error" role="alert">
@@ -227,7 +229,9 @@ export default function LoanForm() {
             onBlur={handleBlur}
             min={1000}
             max={500000}
-            aria-invalid={touched.has("loanAmount") && !!errors.loanAmount}
+            {...(touched.has("loanAmount") && errors.loanAmount
+              ? { "aria-invalid": "true" as const }
+              : {})}
           />
           {touched.has("loanAmount") && errors.loanAmount && (
             <span className="field-error" role="alert">
@@ -246,7 +250,9 @@ export default function LoanForm() {
             onChange={handleChange}
             onBlur={handleBlur}
             min={0}
-            aria-invalid={touched.has("annualIncome") && !!errors.annualIncome}
+            {...(touched.has("annualIncome") && errors.annualIncome
+              ? { "aria-invalid": "true" as const }
+              : {})}
           />
           {touched.has("annualIncome") && errors.annualIncome && (
             <span className="field-error" role="alert">
@@ -263,7 +269,9 @@ export default function LoanForm() {
             value={formData.loanTypeId}
             onChange={handleChange}
             onBlur={handleBlur}
-            aria-invalid={touched.has("loanTypeId") && !!errors.loanTypeId}
+            {...(touched.has("loanTypeId") && errors.loanTypeId
+              ? { "aria-invalid": "true" as const }
+              : {})}
           >
             <option value="">Select a type…</option>
             {loanTypes.map((lt) => (
