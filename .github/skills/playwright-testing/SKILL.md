@@ -17,10 +17,10 @@ Before running any test, confirm:
 
 ## App Overview
 
-| Route | Component | Purpose |
-|-------|-----------|---------|
-| `/` | `Dashboard` | Main loan application list |
-| `/apply` | `LoanForm` | Submit a new loan application |
+| Route    | Component   | Purpose                       |
+| -------- | ----------- | ----------------------------- |
+| `/`      | `Dashboard` | Main loan application list    |
+| `/apply` | `LoanForm`  | Submit a new loan application |
 
 Key components: `LoanApplicationCard`, `LoanApplicationList`, `ActionButtons`, `QuantitySelector`.
 
@@ -28,17 +28,17 @@ State is managed via `LoanProvider` context with a reducer pattern.
 
 ## Available MCP Tools
 
-| Tool | Use For |
-|------|---------|
-| `open_browser_page` | Launch a new browser page |
-| `navigate_page` | Go to a URL |
-| `read_page` | Read current page content/DOM |
-| `screenshot_page` | Capture a screenshot |
-| `click_element` | Click buttons, links, elements |
-| `type_in_page` | Type into input fields |
-| `hover_element` | Hover over elements |
-| `drag_element` | Drag-and-drop interactions |
-| `handle_dialog` | Accept/dismiss alerts and dialogs |
+| Tool                  | Use For                                              |
+| --------------------- | ---------------------------------------------------- |
+| `open_browser_page`   | Launch a new browser page                            |
+| `navigate_page`       | Go to a URL                                          |
+| `read_page`           | Read current page content/DOM                        |
+| `screenshot_page`     | Capture a screenshot                                 |
+| `click_element`       | Click buttons, links, elements                       |
+| `type_in_page`        | Type into input fields                               |
+| `hover_element`       | Hover over elements                                  |
+| `drag_element`        | Drag-and-drop interactions                           |
+| `handle_dialog`       | Accept/dismiss alerts and dialogs                    |
 | `run_playwright_code` | Run arbitrary Playwright code for complex assertions |
 
 ## Procedure
@@ -46,13 +46,16 @@ State is managed via `LoanProvider` context with a reducer pattern.
 ### Step 1 — Confirm Environment
 
 Ask the user:
+
 - Is the **backend API** running?
 - Is the **frontend dev server** running on `http://localhost:5173`?
 
 If the dev server is not running, start it:
+
 ```
 cd buckeye-lending/frontend && npm run dev
 ```
+
 (Run as a background process.)
 
 ### Step 2 — Open the App
@@ -84,6 +87,7 @@ Choose the appropriate test type based on the user's request:
 6. Report pass/fail for each step.
 
 Example flow — **Submit a Loan Application**:
+
 1. Navigate to `/apply`.
 2. Fill in form fields using `type_in_page`.
 3. Click the submit button using `click_element`.
@@ -111,6 +115,7 @@ Example flow — **Submit a Loan Application**:
 After successfully running a test flow via MCP, generate a corresponding Playwright `.spec.ts` file in `buckeye-lending/frontend/tests/`.
 
 The generated test file should:
+
 - Import from `@playwright/test`.
 - Mirror the steps executed via MCP.
 - Use proper Playwright locators (`getByRole`, `getByText`, `getByLabel`, `getByTestId`).
