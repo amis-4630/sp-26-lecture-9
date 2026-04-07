@@ -142,12 +142,55 @@ Provide a summary in chat:
 **Spec file generated:** `buckeye-lending/frontend/tests/<name>.spec.ts`
 ```
 
+## Known Gotchas
+
+### screenshot_page savePath does NOT persist to disk
+
+The `screenshot_page` tool's `savePath` parameter displays the image in chat but **does not reliably save the file to the filesystem**. To actually save screenshots, use `run_playwright_code`:
+
+```js
+await page.screenshot({
+  path: "/absolute/path/to/buckeye-lending/tests/dashboard-initial.png",
+  fullPage: true,
+});
+```
+
+Always verify with `list_dir` that the file was created after saving.
+
+### Dashboard has a loading state
+
+After navigating to `/`, the first `read_page` may return `"Loading loan applications…"` while the API call completes. Always call `read_page` a second time to confirm data has loaded before asserting on card content or taking screenshots.
+
+## Reusable Playwright Snippets
+
+### Save a full-page screenshot to disk
+
+```js
+// Use with run_playwright_code — replace pageId and path as needed
+await page.screenshot({
+  path: "/absolute/path/to/buckeye-lending/tests/<name>.png",
+  fullPage: true,
+});
+```
+
+### Wait for dashboard cards to load before screenshotting
+
+```js
+// Waits for at least one h3 (applicant name) to appear, meaning cards have rendered
+await page.waitForSelector("h3", { timeout: 5000 });
+await page.screenshot({
+  path: "/absolute/path/to/buckeye-lending/tests/dashboard-loaded.png",
+  fullPage: true,
+});
+```
+
 ## Error Handling
 
 - If a page fails to load, retry once after 3 seconds.
 - If an element is not found, use `read_page` to dump the current DOM and diagnose.
 - If the dev server is not responding, prompt the user to check it.
 - Always capture a screenshot on failure for debugging.
+- **Always use `run_playwright_code` with `page.screenshot()` to save files** — do not rely on `screenshot_page` `savePath`.
 
 ## Files
 
